@@ -1,0 +1,18 @@
+{
+  "name": "todo-app-node-gpt41",
+  "version": "1.0.0",
+  "description": "A simple ToDo web app with Node.js, Express, sqlite3, and static frontend.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.0"
+  }
+}
