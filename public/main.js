@@ -3,6 +3,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const todoForm = document.getElementById('todo-form');
   const todoTitle = document.getElementById('todo-title');
 
+  let dragSrcEl = null;
+
+  function saveOrder() {
+    const ids = Array.from(todoList.children).map(li => Number(li.dataset.id));
+    fetch('/api/todos/order', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+  }
+
+  function handleDragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.id);
+    this.classList.add('dragging');
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    if (dragSrcEl && dragSrcEl !== this) {
+      const list = this.parentNode;
+      const srcIndex = Array.from(list.children).indexOf(dragSrcEl);
+      const targetIndex = Array.from(list.children).indexOf(this);
+      if (srcIndex < targetIndex) {
+        list.insertBefore(dragSrcEl, this.nextSibling);
+      } else {
+        list.insertBefore(dragSrcEl, this);
+      }
+      saveOrder();
+    }
+  }
+
+  function handleDragEnd() {
+    this.classList.remove('dragging');
+  }
+
   // ToDo一覧取得
   function fetchTodos() {
     fetch('/api/todos')
@@ -13,6 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const li = document.createElement('li');
           li.className = 'todo-item' + (todo.completed ? ' completed' : '');
           li.dataset.id = todo.id;
+          li.draggable = true;
+          li.addEventListener('dragstart', handleDragStart);
+          li.addEventListener('dragover', handleDragOver);
+          li.addEventListener('drop', handleDrop);
+          li.addEventListener('dragend', handleDragEnd);
 
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';

@@ -56,6 +56,18 @@ app.put('/api/todos/:id', async (req, res) => {
   }
 });
 
+// 順序更新
+app.put('/api/todos/order', async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
+  try {
+    await db.updateTodoOrder(ids);
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 完了済みタスクを一括削除
 app.delete('/api/todos/completed', async (req, res) => {
   try {

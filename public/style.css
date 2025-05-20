@@ -98,3 +98,7 @@ h1 {
 .delete-btn:hover {
   background: #b71c1c;
 }
+
+.todo-item.dragging {
+  opacity: 0.5;
+}
