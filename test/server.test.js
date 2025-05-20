@@ -1,6 +1,7 @@
 process.env.DB_FILE = ':memory:';
 const request = require('supertest');
 const app = require('../server');
+const NON_EXISTENT_ID = 9999;
 
 describe('Todo REST API', () => {
   let createdId;
@@ -55,6 +56,13 @@ describe('Todo REST API', () => {
     await request(app)
       .get(`/api/todos/${createdId}`)
       .expect(404);
+  });
+
+  it('DELETE /api/todos/:id 存在しないタスクは404', async () => {
+    const res = await request(app)
+      .delete(`/api/todos/${NON_EXISTENT_ID}`)
+      .expect(404);
+    expect(res.body.error).toBe('Not found');
   });
 
   it('POST /api/todos バリデーション', async () => {
