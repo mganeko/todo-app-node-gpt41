@@ -12,14 +12,15 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
     `CREATE TABLE IF NOT EXISTS todos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
-      completed INTEGER NOT NULL DEFAULT 0
+      completed INTEGER NOT NULL DEFAULT 0,
+      position INTEGER NOT NULL DEFAULT 0
     )`
   );
 });
 
 function getAllTodos() {
   return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM todos', (err, rows) => {
+    db.all('SELECT * FROM todos ORDER BY position ASC, id ASC', (err, rows) => {
       if (err) return reject(err);
       resolve(rows);
     });
@@ -37,9 +38,17 @@ function getTodoById(id) {
 
 function createTodo(title) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO todos (title, completed) VALUES (?, 0)', [title], function (err) {
+    db.get('SELECT MAX(position) AS maxPos FROM todos', (err, row) => {
       if (err) return reject(err);
-      resolve({ id: this.lastID, title, completed: 0 });
+      const pos = (row?.maxPos || 0) + 1;
+      db.run(
+        'INSERT INTO todos (title, completed, position) VALUES (?, 0, ?)',
+        [title, pos],
+        function (err) {
+          if (err) return reject(err);
+          resolve({ id: this.lastID, title, completed: 0, position: pos });
+        }
+      );
     });
   });
 }
@@ -75,6 +84,21 @@ function deleteTodoById(id) {
   });
 }
 
+function updateTodoOrder(ids) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      const stmt = db.prepare('UPDATE todos SET position = ? WHERE id = ?');
+      ids.forEach((id, idx) => {
+        stmt.run(idx, id);
+      });
+      stmt.finalize((err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 module.exports = {
   getAllTodos,
   getTodoById,
@@ -82,4 +106,5 @@ module.exports = {
   updateTodo,
   deleteCompletedTodos,
   deleteTodoById,
+  updateTodoOrder,
 };
