@@ -115,4 +115,18 @@ describe('Todo REST API', () => {
     expect(afterCount).toBe(beforeCount - 2);
   });
 
+  it('PUT /api/todos/order 並び替え', async () => {
+    const a = await request(app).post('/api/todos').send({ title: 'A' }).expect(201);
+    const b = await request(app).post('/api/todos').send({ title: 'B' }).expect(201);
+    const c = await request(app).post('/api/todos').send({ title: 'C' }).expect(201);
+
+    await request(app)
+      .put('/api/todos/order')
+      .send({ ids: [c.body.id, a.body.id, b.body.id] })
+      .expect(204);
+
+    const res = await request(app).get('/api/todos').expect(200);
+    expect(res.body.map((t) => t.id)).toEqual([c.body.id, a.body.id, b.body.id]);
+  });
+
 });
