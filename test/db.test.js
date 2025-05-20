@@ -61,4 +61,16 @@ describe('DB module', () => {
     const deleted = await db.getTodoById(todo.id);
     expect(deleted).toBeUndefined();
   });
+
+  test('updateTodoOrder reorders todos', async () => {
+    const t1 = await db.createTodo('order1');
+    const t2 = await db.createTodo('order2');
+    const t3 = await db.createTodo('order3');
+
+    await db.updateTodoOrder([t3.id, t1.id, t2.id]);
+
+    const todos = await db.getAllTodos();
+    const ids = todos.map((t) => t.id);
+    expect(ids).toEqual([t3.id, t1.id, t2.id]);
+  });
 });
