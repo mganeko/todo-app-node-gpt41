@@ -1,89 +1,80 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const db = require('./db');
 
 const app = express();
 const PORT = 3000;
-const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'todo.db');
 
 // ミドルウェア
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// DB初期化
-const db = new sqlite3.Database(DB_FILE, (err) => {
-  if (err) {
-    console.error('DB connection error:', err.message);
-    process.exit(1);
-  }
-  db.run(
-    `CREATE TABLE IF NOT EXISTS todos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      completed INTEGER NOT NULL DEFAULT 0
-    )`
-  );
-});
-
 // REST API
 
 // 一覧取得
-app.get('/api/todos', (req, res) => {
-  db.all('SELECT * FROM todos', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/todos', async (req, res) => {
+  try {
+    const rows = await db.getAllTodos();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 単一取得
-app.get('/api/todos/:id', (req, res) => {
-  db.get('SELECT * FROM todos WHERE id = ?', [req.params.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/todos/:id', async (req, res) => {
+  try {
+    const row = await db.getTodoById(req.params.id);
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 新規作成
-app.post('/api/todos', (req, res) => {
+app.post('/api/todos', async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
-  db.run('INSERT INTO todos (title, completed) VALUES (?, 0)', [title], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id: this.lastID, title, completed: 0 });
-  });
+  try {
+    const todo = await db.createTodo(title);
+    res.status(201).json(todo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 更新
-app.put('/api/todos/:id', (req, res) => {
+app.put('/api/todos/:id', async (req, res) => {
   const { title, completed } = req.body;
-  db.run(
-    'UPDATE todos SET title = ?, completed = ? WHERE id = ?',
-    [title, completed ? 1 : 0, req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: 'Not found' });
-      res.json({ id: Number(req.params.id), title, completed: completed ? 1 : 0 });
-    }
-  );
+  try {
+    const changes = await db.updateTodo(req.params.id, title, completed);
+    if (changes === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ id: Number(req.params.id), title, completed: completed ? 1 : 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 完了済みタスクを一括削除
-app.delete('/api/todos/completed', (req, res) => {
-  console.log('Clear completed todos');
-  db.run('DELETE FROM todos WHERE completed = 1', function (err) {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/todos/completed', async (req, res) => {
+  try {
+    await db.deleteCompletedTodos();
     res.status(204).end();
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 削除
-app.delete('/api/todos/:id', (req, res) => {
-  db.run('DELETE FROM todos WHERE id = ?', [req.params.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'Not found' });
+app.delete('/api/todos/:id', async (req, res) => {
+  try {
+    const changes = await db.deleteTodoById(req.params.id);
+    if (changes === 0) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
