@@ -13,7 +13,8 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       completed INTEGER NOT NULL DEFAULT 0,
-      position INTEGER NOT NULL DEFAULT 0
+      position INTEGER NOT NULL DEFAULT 0,
+      priority TEXT NOT NULL DEFAULT 'low'
     )`
   );
 });
@@ -36,28 +37,28 @@ function getTodoById(id) {
   });
 }
 
-function createTodo(title) {
+function createTodo(title, priority = 'low') {
   return new Promise((resolve, reject) => {
     db.get('SELECT MAX(position) AS maxPos FROM todos', (err, row) => {
       if (err) return reject(err);
       const pos = (row?.maxPos || 0) + 1;
       db.run(
-        'INSERT INTO todos (title, completed, position) VALUES (?, 0, ?)',
-        [title, pos],
+        'INSERT INTO todos (title, completed, position, priority) VALUES (?, 0, ?, ?)',
+        [title, pos, priority],
         function (err) {
           if (err) return reject(err);
-          resolve({ id: this.lastID, title, completed: 0, position: pos });
+          resolve({ id: this.lastID, title, completed: 0, position: pos, priority });
         }
       );
     });
   });
 }
 
-function updateTodo(id, title, completed) {
+function updateTodo(id, title, completed, priority = 'low') {
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE todos SET title = ?, completed = ? WHERE id = ?',
-      [title, completed ? 1 : 0, id],
+      'UPDATE todos SET title = ?, completed = ?, priority = ? WHERE id = ?',
+      [title, completed ? 1 : 0, priority, id],
       function (err) {
         if (err) return reject(err);
         resolve(this.changes);

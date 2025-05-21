@@ -34,10 +34,11 @@ app.get('/api/todos/:id', async (req, res) => {
 
 // 新規作成
 app.post('/api/todos', async (req, res) => {
-  const { title } = req.body;
+  const { title, priority } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
+  const p = priority === 'high' ? 'high' : 'low';
   try {
-    const todo = await db.createTodo(title);
+    const todo = await db.createTodo(title, p);
     res.status(201).json(todo);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -58,23 +59,12 @@ app.put('/api/todos/order', async (req, res) => {
 
 // 更新
 app.put('/api/todos/:id', async (req, res) => {
-  const { title, completed } = req.body;
+  const { title, completed, priority } = req.body;
+  const p = priority === 'high' ? 'high' : 'low';
   try {
-    const changes = await db.updateTodo(req.params.id, title, completed);
+    const changes = await db.updateTodo(req.params.id, title, completed, p);
     if (changes === 0) return res.status(404).json({ error: 'Not found' });
-    res.json({ id: Number(req.params.id), title, completed: completed ? 1 : 0 });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 順序更新
-app.put('/api/todos/order', async (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
-  try {
-    await db.updateTodoOrder(ids);
-    res.status(204).end();
+    res.json({ id: Number(req.params.id), title, completed: completed ? 1 : 0, priority: p });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

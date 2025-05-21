@@ -16,30 +16,46 @@ db.serialize(() => {
       process.exit(1);
     }
     const hasPosition = rows.some((r) => r.name === 'position');
-    if (hasPosition) {
-      console.log('Migration not needed: position column already exists.');
+    const hasPriority = rows.some((r) => r.name === 'priority');
+
+    if (hasPosition && hasPriority) {
+      console.log('Migration not needed: columns already exist.');
       db.close();
       return;
     }
 
-    db.run(
-      'ALTER TABLE todos ADD COLUMN position INTEGER NOT NULL DEFAULT 0',
-      (err) => {
+    const tasks = [];
+
+    if (!hasPosition) {
+      tasks.push((cb) =>
+        db.run('ALTER TABLE todos ADD COLUMN position INTEGER NOT NULL DEFAULT 0', cb)
+      );
+      tasks.push((cb) => db.run('UPDATE todos SET position = id', cb));
+    }
+
+    if (!hasPriority) {
+      tasks.push((cb) =>
+        db.run("ALTER TABLE todos ADD COLUMN priority TEXT NOT NULL DEFAULT 'low'", cb)
+      );
+    }
+
+    function next() {
+      const task = tasks.shift();
+      if (!task) {
+        console.log('Migration completed.');
+        db.close();
+        return;
+      }
+      task((err) => {
         if (err) {
-          console.error('Failed to add column:', err.message);
+          console.error('Migration error:', err.message);
           db.close();
           process.exit(1);
         }
-        db.run('UPDATE todos SET position = id', (err) => {
-          if (err) {
-            console.error('Failed to initialize position values:', err.message);
-            db.close();
-            process.exit(1);
-          }
-          console.log('Migration completed: position column added.');
-          db.close();
-        });
-      }
-    );
+        next();
+      });
+    }
+
+    next();
   });
 });
