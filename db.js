@@ -14,7 +14,8 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
       title TEXT NOT NULL,
       completed INTEGER NOT NULL DEFAULT 0,
       position INTEGER NOT NULL DEFAULT 0,
-      priority TEXT NOT NULL DEFAULT 'low'
+      priority TEXT NOT NULL DEFAULT 'low',
+      due_date TEXT
     )`
   );
 });
@@ -37,28 +38,28 @@ function getTodoById(id) {
   });
 }
 
-function createTodo(title, priority = 'low') {
+function createTodo(title, priority = 'low', dueDate = null) {
   return new Promise((resolve, reject) => {
     db.get('SELECT MAX(position) AS maxPos FROM todos', (err, row) => {
       if (err) return reject(err);
       const pos = (row?.maxPos || 0) + 1;
       db.run(
-        'INSERT INTO todos (title, completed, position, priority) VALUES (?, 0, ?, ?)',
-        [title, pos, priority],
+        'INSERT INTO todos (title, completed, position, priority, due_date) VALUES (?, 0, ?, ?, ?)',
+        [title, pos, priority, dueDate],
         function (err) {
           if (err) return reject(err);
-          resolve({ id: this.lastID, title, completed: 0, position: pos, priority });
+          resolve({ id: this.lastID, title, completed: 0, position: pos, priority, due_date: dueDate });
         }
       );
     });
   });
 }
 
-function updateTodo(id, title, completed, priority = 'low') {
+function updateTodo(id, title, completed, priority = 'low', dueDate = null) {
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE todos SET title = ?, completed = ?, priority = ? WHERE id = ?',
-      [title, completed ? 1 : 0, priority, id],
+      'UPDATE todos SET title = ?, completed = ?, priority = ?, due_date = ? WHERE id = ?',
+      [title, completed ? 1 : 0, priority, dueDate, id],
       function (err) {
         if (err) return reject(err);
         resolve(this.changes);

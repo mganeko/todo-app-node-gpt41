@@ -17,8 +17,9 @@ db.serialize(() => {
     }
     const hasPosition = rows.some((r) => r.name === 'position');
     const hasPriority = rows.some((r) => r.name === 'priority');
+    const hasDueDate = rows.some((r) => r.name === 'due_date');
 
-    if (hasPosition && hasPriority) {
+    if (hasPosition && hasPriority && hasDueDate) {
       console.log('Migration not needed: columns already exist.');
       db.close();
       return;
@@ -37,6 +38,10 @@ db.serialize(() => {
       tasks.push((cb) =>
         db.run("ALTER TABLE todos ADD COLUMN priority TEXT NOT NULL DEFAULT 'low'", cb)
       );
+    }
+
+    if (!hasDueDate) {
+      tasks.push((cb) => db.run('ALTER TABLE todos ADD COLUMN due_date TEXT', cb));
     }
 
     function next() {

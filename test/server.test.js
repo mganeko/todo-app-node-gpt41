@@ -14,12 +14,13 @@ describe('Todo REST API', () => {
   it('POST /api/todos 新規作成', async () => {
     const res = await request(app)
       .post('/api/todos')
-      .send({ title: 'テストタスク', priority: 'high' })
+      .send({ title: 'テストタスク', priority: 'high', due_date: '2030-01-01' })
       .expect(201);
     expect(res.body).toHaveProperty('id');
     expect(res.body.title).toBe('テストタスク');
     expect(res.body.completed).toBe(0);
     expect(res.body.priority).toBe('high');
+    expect(res.body.due_date).toBe('2030-01-01');
     createdId = res.body.id;
   });
 
@@ -38,16 +39,18 @@ describe('Todo REST API', () => {
     expect(res.body.id).toBe(createdId);
     expect(res.body.title).toBe('テストタスク');
     expect(res.body.priority).toBe('high');
+    expect(res.body.due_date).toBe('2030-01-01');
   });
 
   it('PUT /api/todos/:id 更新', async () => {
     const res = await request(app)
       .put(`/api/todos/${createdId}`)
-      .send({ title: '更新タスク', completed: true, priority: 'low' })
+      .send({ title: '更新タスク', completed: true, priority: 'low', due_date: '2030-02-01' })
       .expect(200);
     expect(res.body.title).toBe('更新タスク');
     expect(res.body.completed).toBe(1);
     expect(res.body.priority).toBe('low');
+    expect(res.body.due_date).toBe('2030-02-01');
   });
 
   it('DELETE /api/todos/:id 削除', async () => {
@@ -89,11 +92,11 @@ describe('Todo REST API', () => {
     // 2つのタスクを追加
     const res1 = await request(app)
       .post('/api/todos')
-      .send({ title: '完了タスク1', priority: 'low' })
+      .send({ title: '完了タスク1', priority: 'low', due_date: '2030-03-01' })
       .expect(201);
     const res2 = await request(app)
       .post('/api/todos')
-      .send({ title: '完了タスク2', priority: 'low' })
+      .send({ title: '完了タスク2', priority: 'low', due_date: '2030-03-02' })
       .expect(201);
 
     // タスク数を取得して覚える
@@ -105,11 +108,11 @@ describe('Todo REST API', () => {
     // 2つのタスクを完了に
     await request(app)
       .put(`/api/todos/${res1.body.id}`)
-      .send({ title: res1.body.title, completed: true, priority: res1.body.priority })
+      .send({ title: res1.body.title, completed: true, priority: res1.body.priority, due_date: res1.body.due_date })
       .expect(200);
     await request(app)
       .put(`/api/todos/${res2.body.id}`)
-      .send({ title: res2.body.title, completed: true, priority: res2.body.priority })
+      .send({ title: res2.body.title, completed: true, priority: res2.body.priority, due_date: res2.body.due_date })
       .expect(200);
 
     // 完了済みタスクを一括削除
