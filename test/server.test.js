@@ -14,11 +14,12 @@ describe('Todo REST API', () => {
   it('POST /api/todos 新規作成', async () => {
     const res = await request(app)
       .post('/api/todos')
-      .send({ title: 'テストタスク' })
+      .send({ title: 'テストタスク', priority: 'high' })
       .expect(201);
     expect(res.body).toHaveProperty('id');
     expect(res.body.title).toBe('テストタスク');
     expect(res.body.completed).toBe(0);
+    expect(res.body.priority).toBe('high');
     createdId = res.body.id;
   });
 
@@ -36,15 +37,17 @@ describe('Todo REST API', () => {
       .expect(200);
     expect(res.body.id).toBe(createdId);
     expect(res.body.title).toBe('テストタスク');
+    expect(res.body.priority).toBe('high');
   });
 
   it('PUT /api/todos/:id 更新', async () => {
     const res = await request(app)
       .put(`/api/todos/${createdId}`)
-      .send({ title: '更新タスク', completed: true })
+      .send({ title: '更新タスク', completed: true, priority: 'low' })
       .expect(200);
     expect(res.body.title).toBe('更新タスク');
     expect(res.body.completed).toBe(1);
+    expect(res.body.priority).toBe('low');
   });
 
   it('DELETE /api/todos/:id 削除', async () => {
@@ -72,16 +75,25 @@ describe('Todo REST API', () => {
       .expect(400);
     expect(res.body.error).toBe('Title is required');
   });
+
+  it('POST /api/todos デフォルト優先度', async () => {
+    const res = await request(app)
+      .post('/api/todos')
+      .send({ title: 'default priority task' })
+      .expect(201);
+    expect(res.body.priority).toBe('low');
+    await request(app).delete(`/api/todos/${res.body.id}`).expect(204);
+  });
   
   it('DELETE /api/todos/completed 完了済みタスク一括削除', async () => {
     // 2つのタスクを追加
     const res1 = await request(app)
       .post('/api/todos')
-      .send({ title: '完了タスク1' })
+      .send({ title: '完了タスク1', priority: 'low' })
       .expect(201);
     const res2 = await request(app)
       .post('/api/todos')
-      .send({ title: '完了タスク2' })
+      .send({ title: '完了タスク2', priority: 'low' })
       .expect(201);
 
     // タスク数を取得して覚える
@@ -93,11 +105,11 @@ describe('Todo REST API', () => {
     // 2つのタスクを完了に
     await request(app)
       .put(`/api/todos/${res1.body.id}`)
-      .send({ title: res1.body.title, completed: true })
+      .send({ title: res1.body.title, completed: true, priority: res1.body.priority })
       .expect(200);
     await request(app)
       .put(`/api/todos/${res2.body.id}`)
-      .send({ title: res2.body.title, completed: true })
+      .send({ title: res2.body.title, completed: true, priority: res2.body.priority })
       .expect(200);
 
     // 完了済みタスクを一括削除
@@ -116,9 +128,9 @@ describe('Todo REST API', () => {
   });
 
   it('PUT /api/todos/order 並び替え', async () => {
-    const a = await request(app).post('/api/todos').send({ title: 'A' }).expect(201);
-    const b = await request(app).post('/api/todos').send({ title: 'B' }).expect(201);
-    const c = await request(app).post('/api/todos').send({ title: 'C' }).expect(201);
+    const a = await request(app).post('/api/todos').send({ title: 'A', priority: 'low' }).expect(201);
+    const b = await request(app).post('/api/todos').send({ title: 'B', priority: 'low' }).expect(201);
+    const c = await request(app).post('/api/todos').send({ title: 'C', priority: 'low' }).expect(201);
 
     await request(app)
       .put('/api/todos/order')

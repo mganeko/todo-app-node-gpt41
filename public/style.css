@@ -102,3 +102,7 @@ h1 {
 .todo-item.dragging {
   opacity: 0.5;
 }
+
+.priority-select {
+  margin-left: auto;
+}

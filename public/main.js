@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const todoList = document.getElementById('todo-list');
   const todoForm = document.getElementById('todo-form');
   const todoTitle = document.getElementById('todo-title');
+  const todoPriority = document.getElementById('todo-priority');
 
   let dragSrcEl = null;
 
@@ -71,6 +72,17 @@ document.addEventListener('DOMContentLoaded', () => {
           span.contentEditable = true;
           span.addEventListener('blur', () => updateTitle(todo, span.textContent));
 
+          const prioritySelect = document.createElement('select');
+          prioritySelect.className = 'priority-select';
+          ['low', 'high'].forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p === 'low' ? '低' : '高';
+            if (p === todo.priority) opt.selected = true;
+            prioritySelect.appendChild(opt);
+          });
+          prioritySelect.addEventListener('change', () => updatePriority(todo, prioritySelect.value));
+
           const delBtn = document.createElement('button');
           delBtn.textContent = '削除';
           delBtn.className = 'delete-btn';
@@ -78,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           li.appendChild(checkbox);
           li.appendChild(span);
+          li.appendChild(prioritySelect);
           li.appendChild(delBtn);
           todoList.appendChild(li);
         });
@@ -89,14 +102,16 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const title = todoTitle.value.trim();
     if (!title) return;
+    const priority = todoPriority.value;
     fetch('/api/todos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title })
+      body: JSON.stringify({ title, priority })
     })
       .then(res => res.json())
       .then(() => {
         todoTitle.value = '';
+        todoPriority.value = 'low';
         fetchTodos();
       });
   });
@@ -112,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: todo.title, completed })
+      body: JSON.stringify({ title: todo.title, completed, priority: todo.priority })
     })
       .then(() => fetchTodos());
   }
@@ -123,7 +138,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle, completed: todo.completed })
+      body: JSON.stringify({ title: newTitle, completed: todo.completed, priority: todo.priority })
+    })
+      .then(() => fetchTodos());
+  }
+
+  function updatePriority(todo, newPriority) {
+    fetch(`/api/todos/${todo.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: todo.title, completed: todo.completed, priority: newPriority })
     })
       .then(() => fetchTodos());
   }
