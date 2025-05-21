@@ -106,3 +106,7 @@ h1 {
 .priority-select {
   margin-left: auto;
 }
+
+.due-date-input {
+  width: 130px;
+}

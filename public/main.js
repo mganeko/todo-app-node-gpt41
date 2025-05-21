@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const todoForm = document.getElementById('todo-form');
   const todoTitle = document.getElementById('todo-title');
   const todoPriority = document.getElementById('todo-priority');
+  const todoDueDate = document.getElementById('todo-due-date');
 
   let dragSrcEl = null;
 
@@ -83,6 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
           });
           prioritySelect.addEventListener('change', () => updatePriority(todo, prioritySelect.value));
 
+          const dueInput = document.createElement('input');
+          dueInput.type = 'date';
+          dueInput.className = 'due-date-input';
+          if (todo.due_date) dueInput.value = todo.due_date;
+          dueInput.addEventListener('change', () => updateDueDate(todo, dueInput.value));
+
           const delBtn = document.createElement('button');
           delBtn.textContent = '削除';
           delBtn.className = 'delete-btn';
@@ -91,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
           li.appendChild(checkbox);
           li.appendChild(span);
           li.appendChild(prioritySelect);
+          li.appendChild(dueInput);
           li.appendChild(delBtn);
           todoList.appendChild(li);
         });
@@ -103,15 +111,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = todoTitle.value.trim();
     if (!title) return;
     const priority = todoPriority.value;
+    const due_date = todoDueDate.value || null;
     fetch('/api/todos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, priority })
+      body: JSON.stringify({ title, priority, due_date })
     })
       .then(res => res.json())
       .then(() => {
         todoTitle.value = '';
         todoPriority.value = 'low';
+        todoDueDate.value = '';
         fetchTodos();
       });
   });
@@ -127,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: todo.title, completed, priority: todo.priority })
+      body: JSON.stringify({ title: todo.title, completed, priority: todo.priority, due_date: todo.due_date })
     })
       .then(() => fetchTodos());
   }
@@ -138,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle, completed: todo.completed, priority: todo.priority })
+      body: JSON.stringify({ title: newTitle, completed: todo.completed, priority: todo.priority, due_date: todo.due_date })
     })
       .then(() => fetchTodos());
   }
@@ -147,7 +157,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: todo.title, completed: todo.completed, priority: newPriority })
+      body: JSON.stringify({ title: todo.title, completed: todo.completed, priority: newPriority, due_date: todo.due_date })
+    })
+      .then(() => fetchTodos());
+  }
+
+  function updateDueDate(todo, newDate) {
+    fetch(`/api/todos/${todo.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: todo.title, completed: todo.completed, priority: todo.priority, due_date: newDate })
     })
       .then(() => fetchTodos());
   }
