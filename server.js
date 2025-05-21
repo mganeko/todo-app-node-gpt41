@@ -34,10 +34,10 @@ app.get('/api/todos/:id', async (req, res) => {
 
 // 新規作成
 app.post('/api/todos', async (req, res) => {
-  const { title, priority = 'low' } = req.body;
+  const { title } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
   try {
-    const todo = await db.createTodo(title, priority);
+    const todo = await db.createTodo(title);
     res.status(201).json(todo);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -46,16 +46,11 @@ app.post('/api/todos', async (req, res) => {
 
 // 更新
 app.put('/api/todos/:id', async (req, res) => {
-  const { title, completed, priority } = req.body;
+  const { title, completed } = req.body;
   try {
-    const changes = await db.updateTodo(req.params.id, title, completed, priority);
+    const changes = await db.updateTodo(req.params.id, title, completed);
     if (changes === 0) return res.status(404).json({ error: 'Not found' });
-    res.json({
-      id: Number(req.params.id),
-      title,
-      completed: completed ? 1 : 0,
-      priority,
-    });
+    res.json({ id: Number(req.params.id), title, completed: completed ? 1 : 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const todoList = document.getElementById('todo-list');
   const todoForm = document.getElementById('todo-form');
   const todoTitle = document.getElementById('todo-title');
-  const todoPriority = document.getElementById('todo-priority');
 
   // ToDo一覧取得
   function fetchTodos() {
@@ -25,16 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
           span.contentEditable = true;
           span.addEventListener('blur', () => updateTitle(todo, span.textContent));
 
-          const prioritySelect = document.createElement('select');
-          ['low', 'high'].forEach(level => {
-            const opt = document.createElement('option');
-            opt.value = level;
-            opt.textContent = level;
-            if (todo.priority === level) opt.selected = true;
-            prioritySelect.appendChild(opt);
-          });
-          prioritySelect.addEventListener('change', () => updatePriority(todo, prioritySelect.value));
-
           const delBtn = document.createElement('button');
           delBtn.textContent = '削除';
           delBtn.className = 'delete-btn';
@@ -42,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
           li.appendChild(checkbox);
           li.appendChild(span);
-          li.appendChild(prioritySelect);
           li.appendChild(delBtn);
           todoList.appendChild(li);
         });
@@ -53,17 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
   todoForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const title = todoTitle.value.trim();
-    const priority = todoPriority.value;
     if (!title) return;
     fetch('/api/todos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, priority })
+      body: JSON.stringify({ title })
     })
       .then(res => res.json())
       .then(() => {
         todoTitle.value = '';
-        todoPriority.value = 'low';
         fetchTodos();
       });
   });
@@ -75,30 +61,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ToDo完了状態切り替え
-  function updateTodo(todo, data) {
+  function toggleCompleted(todo, completed) {
     fetch(`/api/todos/${todo.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: data.title !== undefined ? data.title : todo.title,
-        completed: data.completed !== undefined ? data.completed : todo.completed,
-        priority: data.priority !== undefined ? data.priority : todo.priority,
-      }),
-    }).then(() => fetchTodos());
-  }
-
-  function toggleCompleted(todo, completed) {
-    updateTodo(todo, { completed });
+      body: JSON.stringify({ title: todo.title, completed })
+    })
+      .then(() => fetchTodos());
   }
 
   // タイトル編集
   function updateTitle(todo, newTitle) {
     if (newTitle.trim() === '' || newTitle === todo.title) return;
-    updateTodo(todo, { title: newTitle });
-  }
-
-  function updatePriority(todo, newPriority) {
-    updateTodo(todo, { priority: newPriority });
+    fetch(`/api/todos/${todo.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle, completed: todo.completed })
+    })
+      .then(() => fetchTodos());
   }
 
   // 完了済みタスク一括削除
