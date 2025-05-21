@@ -8,13 +8,24 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
     console.error('DB connection error:', err.message);
     process.exit(1);
   }
-  db.run(
-    `CREATE TABLE IF NOT EXISTS todos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      completed INTEGER NOT NULL DEFAULT 0
-    )`
-  );
+  db.serialize(() => {
+    db.run(
+      `CREATE TABLE IF NOT EXISTS todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        completed INTEGER NOT NULL DEFAULT 0,
+        priority TEXT NOT NULL DEFAULT 'low'
+      )`
+    );
+    db.run(
+      "ALTER TABLE todos ADD COLUMN priority TEXT NOT NULL DEFAULT 'low'",
+      (err) => {
+        if (err && !/duplicate column/.test(err.message)) {
+          console.error('DB migration error:', err.message);
+        }
+      }
+    );
+  });
 });
 
 function getAllTodos() {
@@ -35,20 +46,24 @@ function getTodoById(id) {
   });
 }
 
-function createTodo(title) {
+function createTodo(title, priority = 'low') {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO todos (title, completed) VALUES (?, 0)', [title], function (err) {
-      if (err) return reject(err);
-      resolve({ id: this.lastID, title, completed: 0 });
-    });
+    db.run(
+      'INSERT INTO todos (title, completed, priority) VALUES (?, 0, ?)',
+      [title, priority],
+      function (err) {
+        if (err) return reject(err);
+        resolve({ id: this.lastID, title, completed: 0, priority });
+      }
+    );
   });
 }
 
-function updateTodo(id, title, completed) {
+function updateTodo(id, title, completed, priority) {
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE todos SET title = ?, completed = ? WHERE id = ?',
-      [title, completed ? 1 : 0, id],
+      'UPDATE todos SET title = ?, completed = ?, priority = ? WHERE id = ?',
+      [title, completed ? 1 : 0, priority, id],
       function (err) {
         if (err) return reject(err);
         resolve(this.changes);
