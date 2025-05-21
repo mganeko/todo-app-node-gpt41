@@ -34,6 +34,13 @@ h1 {
   font-size: 1em;
 }
 
+#todo-priority {
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font-size: 1em;
+}
+
 #todo-form button {
   padding: 8px 16px;
   background: #1976d2;
